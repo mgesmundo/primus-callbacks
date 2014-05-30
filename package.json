@@ -1,6 +1,6 @@
 {
   "name": "primus-callbacks",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Request-Response ortiented communication for websockets with Primus.",
   "main": "index.js",
   "scripts": {

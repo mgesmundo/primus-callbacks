@@ -198,5 +198,48 @@ describe('primus-callbacks', function() {
         callback('ok');
       });
     });
+
+    it('should reset the timeout timer after executing the handler on the client', function(done) {
+      httpServer.listen(function() {
+        primus.on('connection', function(spark) {
+          spark.on('request', function(req, callback) {
+            expect(req).to.be.eql('hello from client');
+            callback('ok');
+          });
+        });
+      });
+      var client = clientFactory(httpServer, primus);
+      var counter = 0;
+      client.writeAndWait('hello from client', function(res) {
+        counter++;
+        expect(res).to.be.eql('ok');
+        // wait more than 200 ms: if the callback is called more times, the counter is wrong
+        setTimeout(function() {
+          expect(counter).to.be.eql(1);
+          done();
+        }, 500);
+      });
+    });
+
+    it('should reset the timeout timer after executing the handler on the server', function(done) {
+      httpServer.listen(function() {
+        var counter = 0;
+        primus.on('connection', function(spark) {
+          spark.writeAndWait('hello from server', function(res) {
+            counter++;
+            expect(res).to.be.eql('ok');
+            setTimeout(function() {
+              expect(counter).to.be.eql(1);
+              done();
+            }, 500);
+          });
+        });
+      });
+      var client = clientFactory(httpServer, primus);
+      client.on('request', function(req, callback) {
+        expect(req).to.be.eql('hello from server');
+        callback('ok');
+      });
+    });
   });
 });
