@@ -2,6 +2,7 @@
 
 Client and server plugin that adds a request/response cycle to [Primus](https://github.com/3rd-Eden/primus).
 This is a fork of [primus-responder](https://www.npmjs.org/package/primus-responder) module with a secure request id generation (uuid generation RFC 4122 compliant) and a timeout for each request.
+Note: the current 2.x release is not backward compatible with the previous due the new signature of the `writeAndWait` method and the `callback` used as response (see below).
 
 ## Installation
 
@@ -12,7 +13,7 @@ This is a fork of [primus-responder](https://www.npmjs.org/package/primus-respon
 * Wrap existing REST API into a realtime websocket connection
 * Simplify program flow if waiting on a specific response is needed
 
-## Usage
+## Usage
 
 Use `requestTimeout` option to define a timeout for every request (both on server and client). If no response is received after requestTimeout ms, the callback is executed passing an Error instance with a `timeout` property (see `test.js`).
 
@@ -36,11 +37,11 @@ primus.on('connection', function(spark) {
     // Handle incoming requests:
     spark.on('request', function(data, done) {
         // Echo the received request data
-        done(data);
+        done(null, data);
     });
 
     // Request a response from the spark:
-    spark.writeAndWait('request from server', function(response) {
+    spark.writeAndWait('request from server', function(err, response) {
         // Write the sparks response to console
         console.log('Response from spark:' response);
     });
@@ -65,11 +66,11 @@ var primus = Primus.connect('ws://localhost:8080', options);
 // Handle incoming requests:
 primus.on('request', function(data, done) {
     // Echo the received request data
-    done(data);
+    done(null, data);
 });
 
 // Request a response from the server:
-primus.writeAndWait('request from client', function(response) {
+primus.writeAndWait('request from client', function(err, response) {
     // Write the servers response to console
     console.log('Response from server:', response);
 });
@@ -93,11 +94,11 @@ var Primus = require('primus')
 // Handle incoming requests:
 primus.on('request', function(data, done) {
     // Echo the received request data
-    done(data);
+    done(null, data);
 });
 
 // Request a response from the server:
-primus.writeAndWait('request from client', function(response) {
+primus.writeAndWait('request from client', function(err, response) {
     // Write the servers response to console
     console.log('Response from server:', response);
 });
@@ -109,21 +110,23 @@ primus.writeAndWait('request from client', function(response) {
 Registers an event handler for incoming requests. The handler has two arguments: `fn(data, done)`
 
 * `data` contains the data which was sent with the request
-* `done` is a callback function. First and only argument contains the data you want to transmit or the Error instance if an error occurred.
+* `done` is a callback function. The signature is `done (err, res)`, where:
+    - `err` is the error if occurred (as an Error instance or String)
+    - `res` is the the data you want to transmit.
 
 
 ```javascript
 spark.on('request', function(data, done) {
-    done('this is the response');
+    done('this is an error', 'this is the response');
 });
 ```
 
 #### spark#writeAndWait(data, fn)
-Sends `data` to the given spark. As soon as the response from the spark arrives, `fn` is called with the sparks response as first and only argument
+Sends `data` to the given spark. As soon as the response from the spark arrives, `fn` is called with the error if occurred and the sparks response as arguments: `fn (err, res)`.
 
 ```javascript
-spark.writeAndWait('request data', function(response) {
-    console.log('spark responded:', response);
+spark.writeAndWait('request data', function(err, res) {
+    console.log('spark responded:', res);
 });
 ```
 
@@ -132,19 +135,21 @@ spark.writeAndWait('request data', function(response) {
 Registers an event handler for incoming requests. The handler has two arguments: `fn(data, done)`
 
 * `data` contains the data which was sent with the request
-* `done` is a callback function. First and only argument contains the data you want to transmit.
+* `done` is a callback function. The signature is `done (err, res)`, where:
+    - `err` is the error if occurred (as an Error instance or String)
+    - `res` is the the data you want to transmit.
 
 ```javascript
 primus.on('request', function(data, done) {
-    done('this is the response');
+    done('this is an error', 'this is the response');
 });
 ```
 
 #### primus#writeAndWait(data, fn)
-Sends `data` to the connected server. As soon as the response arrives, `fn` is called with the servers response as first and only argument.
+Sends `data` to the connected server. As soon as the response from the spark arrives, `fn` is called with the error if occurred and the sparks response as arguments: `fn (err, res)`.
 
 ```javascript
-primus.writeAndWait('request data', function(response) {
+primus.writeAndWait('request data', function(err, res) {
     console.log('server responded:', response);
 });
 ```

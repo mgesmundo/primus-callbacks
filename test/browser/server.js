@@ -17,14 +17,22 @@ server.listen(3000, function() {
     console.log('connection');
     spark.on('request', function(req, callback) {
       console.log('received request from client');
-      callback('ok');
+      if (req === 'hello from client with error') {
+        callback(new Error('unknown'), 'ok');
+      } else {
+        callback(null, 'ok');
+      }
     });
     spark.on('data', function(data) {
       if (data === 'ask me') {
         console.log('send request to client');
-        spark.writeAndWait('hello from server', function (res) {
+        spark.writeAndWait('hello from server', function (err, res) {
           console.log('received response from client');
-          spark.write(res);
+          var envelope = {
+            data: res,
+            err: err
+          };
+          spark.write(envelope);
         });
       }
     });

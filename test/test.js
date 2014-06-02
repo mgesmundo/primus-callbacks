@@ -82,7 +82,7 @@ describe('primus-callbacks', function() {
       httpServer.listen(function() {
         primus.on('connection', function(spark) {
           spark.on('request', function(data, doneCallback) {
-            doneCallback(responseEnvelope.data);
+            doneCallback(null, responseEnvelope.data);
           })
         });
         primus.transform('outgoing', function(packet) {
@@ -141,7 +141,7 @@ describe('primus-callbacks', function() {
           done();
         });
         client.on('request', function(data, doneCallback) {
-          doneCallback(responseEnvelope.data);
+          doneCallback(null, responseEnvelope.data);
         });
         primus.on('connection', function(spark) {
           spark.write(requestEnvelope);
@@ -172,12 +172,30 @@ describe('primus-callbacks', function() {
         primus.on('connection', function(spark) {
           spark.on('request', function(req, callback) {
             expect(req).to.be.eql('hello from client');
-            callback('ok');
+            callback(null, 'ok');
           });
         });
       });
       var client = clientFactory(httpServer, primus);
-      client.writeAndWait('hello from client', function(res) {
+      client.writeAndWait('hello from client', function(err, res) {
+        expect(res).to.be.eql('ok');
+        done();
+      });
+    });
+
+    it('should execute the handler client with an error after a client request', function(done) {
+      httpServer.listen(function() {
+        primus.on('connection', function(spark) {
+          spark.on('request', function(req, callback) {
+            expect(req).to.be.eql('hello from client');
+            callback(new Error('unknown'), 'ok');
+          });
+        });
+      });
+      var client = clientFactory(httpServer, primus);
+      client.writeAndWait('hello from client', function(err, res) {
+        expect(err).to.instanceOf(Error);
+        expect(err.message).to.be.equal('unknown');
         expect(res).to.be.eql('ok');
         done();
       });
@@ -186,7 +204,7 @@ describe('primus-callbacks', function() {
     it('should execute the handler server after a server request', function(done) {
       httpServer.listen(function() {
         primus.on('connection', function(spark) {
-          spark.writeAndWait('hello from server', function(res) {
+          spark.writeAndWait('hello from server', function(err, res) {
             expect(res).to.be.eql('ok');
             done();
           });
@@ -195,7 +213,7 @@ describe('primus-callbacks', function() {
       var client = clientFactory(httpServer, primus);
       client.on('request', function(req, callback) {
         expect(req).to.be.eql('hello from server');
-        callback('ok');
+        callback(null, 'ok');
       });
     });
 
@@ -204,13 +222,13 @@ describe('primus-callbacks', function() {
         primus.on('connection', function(spark) {
           spark.on('request', function(req, callback) {
             expect(req).to.be.eql('hello from client');
-            callback('ok');
+            callback(null, 'ok');
           });
         });
       });
       var client = clientFactory(httpServer, primus);
       var counter = 0;
-      client.writeAndWait('hello from client', function(res) {
+      client.writeAndWait('hello from client', function(err, res) {
         counter++;
         expect(res).to.be.eql('ok');
         // wait more than 200 ms: if the callback is called more times, the counter is wrong
@@ -225,7 +243,7 @@ describe('primus-callbacks', function() {
       httpServer.listen(function() {
         var counter = 0;
         primus.on('connection', function(spark) {
-          spark.writeAndWait('hello from server', function(res) {
+          spark.writeAndWait('hello from server', function(err, res) {
             counter++;
             expect(res).to.be.eql('ok');
             setTimeout(function() {
@@ -238,7 +256,7 @@ describe('primus-callbacks', function() {
       var client = clientFactory(httpServer, primus);
       client.on('request', function(req, callback) {
         expect(req).to.be.eql('hello from server');
-        callback('ok');
+        callback(null, 'ok');
       });
     });
   });

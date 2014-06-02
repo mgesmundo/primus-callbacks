@@ -13,7 +13,22 @@ describe('primus-callbacks', function() {
     var primus = Primus.connect('http://localhost:3000', options);
     primus.on('open', function () {
       console.log('open');
-      primus.writeAndWait('hello from client', function (res) {
+      primus.writeAndWait('hello from client', function (err, res) {
+        expect(err).to.be.undefined;
+        expect(res).to.be.eql('ok');
+        primus.end();
+        done();
+      });
+    });
+  });
+
+  it('should execute the handler client with an error after a client request', function(done) {
+    var primus = Primus.connect('http://localhost:3000', options);
+    primus.on('open', function () {
+      console.log('open');
+      primus.writeAndWait('hello from client with error', function (err, res) {
+        expect(err).to.instanceOf(Error);
+        expect(err.message).to.be.equal('unknown');
         expect(res).to.be.eql('ok');
         primus.end();
         done();
@@ -29,10 +44,10 @@ describe('primus-callbacks', function() {
     });
     primus.on('request', function (req, callback) {
       expect(req).to.be.eql('hello from server');
-      callback('ok');
+      callback(null, 'ok');
     });
     primus.on('data', function (data) {
-      expect(data).to.be.eql('ok');
+      expect(data).to.be.eql({ data: 'ok' });
       primus.end();
       done();
     });
