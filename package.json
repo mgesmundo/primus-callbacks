@@ -1,7 +1,7 @@
 {
   "name": "primus-callbacks",
   "version": "2.1.0",
-  "description": "Request-Response ortiented communication for websockets with Primus.",
+  "description": "Request-Response oriented communication for websockets with Primus.",
   "main": "index.js",
   "scripts": {
     "test": "mocha test/test.js --reporter spec"
