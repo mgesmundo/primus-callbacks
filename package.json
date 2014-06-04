@@ -1,6 +1,6 @@
 {
   "name": "primus-callbacks",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Request-Response ortiented communication for websockets with Primus.",
   "main": "index.js",
   "scripts": {
@@ -23,7 +23,8 @@
   },
   "dependencies": {
     "debug": "^0.8.1",
-    "node-uuid": "^1.4.1"
+    "node-uuid": "^1.4.1",
+    "load": "~1.0.1"
   },
   "devDependencies": {
     "primus": "^2.2.4",

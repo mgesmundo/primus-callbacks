@@ -166,7 +166,7 @@ describe('primus-callbacks', function() {
     });
   });
 
-  describe('client and server all together', function() {
+  describe.only('client and server all together', function() {
     it('should execute the handler client after a client request', function(done) {
       httpServer.listen(function() {
         primus.on('connection', function(spark) {
@@ -194,9 +194,28 @@ describe('primus-callbacks', function() {
       });
       var client = clientFactory(httpServer, primus);
       client.writeAndWait('hello from client', function(err, res) {
-        expect(err).to.instanceOf(Error);
+        expect(err).to.be.instanceOf(Error);
         expect(err.message).to.be.equal('unknown');
         expect(res).to.be.eql('ok');
+        done();
+      });
+    });
+
+    it('should execute the handler client (with an error as data) after a client request', function(done) {
+      httpServer.listen(function() {
+        primus.on('connection', function(spark) {
+          spark.on('request', function(req, callback) {
+            expect(req).to.be.eql('hello from client');
+            callback(new Error('unknown'), { body: { error: new Error('data error')}});
+          });
+        });
+      });
+      var client = clientFactory(httpServer, primus);
+      client.writeAndWait('hello from client', function(err, res) {
+        expect(err).to.instanceOf(Error);
+        expect(err.message).to.be.equal('unknown');
+        expect(res.body.error).to.be.instanceOf(Error);
+        expect(res.body.error.message).to.be.eql('data error');
         done();
       });
     });
@@ -214,6 +233,25 @@ describe('primus-callbacks', function() {
       client.on('request', function(req, callback) {
         expect(req).to.be.eql('hello from server');
         callback(null, 'ok');
+      });
+    });
+
+    it('should execute the handler server (with an error as data) after a server request', function(done) {
+      httpServer.listen(function() {
+        primus.on('connection', function(spark) {
+          spark.writeAndWait('hello from server', function(err, res) {
+            expect(err).to.instanceOf(Error);
+            expect(err.message).to.be.equal('unknown');
+            expect(res.body.error).to.be.instanceOf(Error);
+            expect(res.body.error.message).to.be.eql('data error');
+            done();
+          });
+        });
+      });
+      var client = clientFactory(httpServer, primus);
+      client.on('request', function(req, callback) {
+        expect(req).to.be.eql('hello from server');
+        callback(new Error('unknown'), { body: { error: new Error('data error') } });
       });
     });
 
